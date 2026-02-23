@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TITAN 価格管理ツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e4e4e7;font-size:13px}
+.hdr{background:#111;border-bottom:1px solid rgba(245,158,11,.3);padding:6px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.hdr h1{font-size:18px;font-weight:900;color:#f59e0b;letter-spacing:1px}
+.hdr .sub{font-size:12px;color:#52525b;margin-left:12px;border-left:1px solid #333;padding-left:12px}
+.wrap{margin:0;padding:4px 8px 12px}
+.tabs{display:flex;gap:2px;padding-top:4px;overflow-x:auto}
+.tab{padding:5px 12px;font-size:11px;font-weight:600;border-radius:6px 6px 0 0;cursor:pointer;border:none;background:#1a1a1e;color:#71717a;white-space:nowrap;transition:.15s}
+.tab.on{background:#27272a;color:#f59e0b;border:1px solid #3f3f46;border-bottom-color:#27272a}
+.tab:not(.on):hover{color:#a1a1aa}
+.pnl{background:#27272a;border:1px solid #3f3f46;border-radius:0 8px 8px 8px;display:none}
+.pnl.on{display:block}
+.sec{padding:6px 10px}
+.sec+.sec{border-top:1px solid #333}
+.row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:4px}
+h3{font-size:13px;font-weight:700}
+.btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.12s}
+.btn:active{transform:scale(.96)}
+.b1{background:#f59e0b;color:#111}.b1:hover{background:#fbbf24}
+.b2{background:#3f3f46;color:#d4d4d8}.b2:hover{background:#52525b}
+.bx{background:none;border:none;color:rgba(248,113,113,.35);cursor:pointer;font-weight:700;font-size:11px;padding:2px 5px}.bx:hover{color:#f87171}
+label.btn input[type=file]{display:none}
+table{width:100%;border-collapse:collapse;table-layout:auto}
+thead{position:sticky;top:0;z-index:2}
+th{background:#1a1a1e;color:#71717a;font-size:10px;text-transform:uppercase;padding:3px 4px;text-align:left;font-weight:600}
+th.r{text-align:right}th.c{text-align:center}
+td{padding:2px 4px;border-top:1px solid rgba(63,63,70,.35);font-size:11px}
+td.r{text-align:right}td.c{text-align:center}td.m{font-family:ui-monospace,monospace;font-size:11px}
+tr:hover td{background:rgba(63,63,70,.15)}
+tr.xc td{opacity:.3}
+.scr{overflow:auto}
+.stat{display:inline-block;background:#1a1a1e;border-radius:5px;padding:4px 10px;font-size:11px;margin:0 3px 4px 0}
+.G{color:#4ade80}.B{color:#60a5fa}.P{color:#c084fc}.O{color:#fb923c}.A{color:#f59e0b}.R{color:#f87171}.W{color:#fff}.GR{color:#71717a}
+.badge{font-size:9px;padding:1px 5px;border-radius:3px}
+.bg{background:rgba(74,222,128,.12);color:#4ade80}
+.by{background:rgba(250,204,21,.12);color:#facc15}
+.bgr{background:rgba(113,113,122,.2);color:#71717a}
+a.kk{color:rgba(245,158,11,.55);font-size:10px;text-decoration:underline}.kk:hover{color:#f59e0b}
+.trn{max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edt{cursor:pointer;padding:1px 4px;border-radius:3px;display:inline-block;min-width:44px;text-align:right}
+.edt:hover{background:rgba(245,158,11,.08)}
+.inp{border:1px solid #f59e0b;border-radius:3px;padding:1px 4px;font-size:12px;width:80px;background:#fffbeb;color:#111;outline:none;font-family:ui-monospace,monospace;text-align:right}
+.inp.wide{width:180px;text-align:left}
+.ci{background:transparent;color:#d4d4d8;border:1px solid transparent;border-radius:3px;padding:1px 2px;width:62px;text-align:right;font:11px ui-monospace,monospace;outline:none;-moz-appearance:textfield}
+.ci::-webkit-inner-spin-button,.ci::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.ci:focus{border-color:#f59e0b;background:#18181b;color:#fff}
+.ci:hover:not(:focus){border-color:#333}
+.ci.gpu{color:#f472b6}
+.ci.price{width:76px;color:#60a5fa;font-weight:700}
+.ci.price-auto{width:76px;color:#4ade80;font-weight:700}
+.logbox{background:#111;border-radius:6px;padding:10px;font-family:ui-monospace,monospace;font-size:11px;max-height:400px;overflow-y:auto}
+.logbox div{color:#a1a1aa;margin-bottom:1px}
+.empty{text-align:center;padding:50px 0;color:#52525b}
+.empty .ic{font-size:26px;margin-bottom:6px}
+td.cost-cell{background:rgba(245,158,11,.04);font-weight:600}
+td.price-cell{background:rgba(96,165,250,.06)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div style="display:flex;align-items:center"><h1>TITAN</h1><span class="sub">価格管理ツール</span></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="font-size:11px;color:#3f3f46" id="dateD"></span>
+    <span style="font-size:10px;color:#4ade80" id="saveInd">💾 自動保存</span>
+    <span id="syncWrap" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;font-weight:600" onclick="gpuSync=!gpuSync;rA()">
+      <span id="syncDot" style="display:inline-block;width:8px;height:8px;border-radius:50%"></span>
+      🔗 グラボ同期
+    </span>
+    <button onclick="expJson()" style="font-size:10px;color:#60a5fa;background:none;border:1px solid #334;border-radius:4px;padding:2px 8px;cursor:pointer">📥 JSON出力</button>
+    <label style="font-size:10px;color:#f59e0b;background:none;border:1px solid #433;border-radius:4px;padding:2px 8px;cursor:pointer">📂 JSON読込<input type="file" accept=".json" onchange="impJson(this)" style="display:none"></label>
+    <button onclick="resetData()" style="font-size:10px;color:#71717a;background:none;border:1px solid #333;border-radius:4px;padding:2px 8px;cursor:pointer">初期値に戻す</button>
+  </div>
+</div>
+<div class="wrap">
+<div class="tabs" id="tabBar"></div>
+<div id="panels"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+// Platform config
+const PC={
+  s:{id:'sc',l:'Shopify',cl:'G',ic:'🛒',
+    pk:['gpu','cpu','mb','mem','ssd','cs','psu','cool','os'],
+    pl:{gpu:'グラボ',cpu:'CPU',mb:'マザボ',mem:'メモリ',ssd:'SSD',cs:'ケース',psu:'電源',cool:'クーラー',os:'OS'},
+    fee:(p,c)=>Math.round(p/20+1500+(p-c)*10/110),
+    autoP:c=>Math.round((21500+10*c/11)*220/167/1000)*1000,
+    fd:'売値÷20+1500+(売値−原価)×10÷110',pl2:'売値(E681基準)',kk:true,cs:true},
+  m:{id:'mc',l:'メルカリShops',cl:'B',ic:'📦',
+    pk:['gpu','cpu','mb','mem','ssd','cs','psu','cool','os'],
+    pl:{gpu:'グラボ',cpu:'CPU',mb:'マザボ',mem:'メモリ',ssd:'SSD',cs:'ケース',psu:'電源',cool:'クーラー',os:'OS'},
+    fee:(p,c)=>{const b=p/10+1500;return Math.round(b+(p-c-b)*0.05)},
+    autoP:c=>Math.round((21425+0.95*c)/0.755/1000)*1000,
+    fd:'売値÷10+1500+(売値−原価−(売値÷10+1500))×0.05',pl2:'売値(基準)',kk:false,cs:true},
+  i:{id:'ic',l:'イトウメルカリ',cl:'P',ic:'👤',
+    pk:['gpu','cpu','mb','mem','ssd','cs','psu','cool'],
+    pl:{gpu:'グラボ',cpu:'CPU',mb:'マザボ',mem:'メモリ',ssd:'SSD',cs:'ケース',psu:'電源',cool:'クーラー'},
+    fee:(p,c)=>Math.round(p/10+1500+(p-c)*10/110),
+    autoP:c=>Math.round((21500+100*c/110)*110/78/1000)*1000,
+    fd:'売値÷10+1500+(売値−原価)×10÷110',pl2:'売値',kk:false,cs:false},
+  a:{id:'ac',l:'アミノメルカリ',cl:'O',ic:'👤',
+    pk:['gpu','cpu','mb','mem','ssd','cs','kb','psu','cool','os'],
+    pl:{gpu:'グラボ',cpu:'CPU',mb:'マザボ',mem:'メモリ',ssd:'SSD',cs:'ケース',kb:'KB/モニタ',psu:'電源',cool:'クーラー',os:'OS'},
+    fee:(p,c)=>Math.round(p*0.1+1500),
+    autoP:c=>Math.round((21500+c)/0.8/1000)*1000,
+    fd:'売値×10%+1500',pl2:'売値',kk:false,cs:false}
+};
+
+let data=[
+  {n:"RTX5080",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=499",
+   s:{gpu:210000,cpu:30000,mb:9000,mem:25000,ssd:12000,cs:10000,psu:14000,cool:1000,os:300,p:422000},
+   m:{gpu:210000,cpu:30000,mb:10000,mem:25000,ssd:12000,cs:10000,psu:7200,cool:1000,os:300,p:434000},i:null,a:null},
+  {n:"RX9070XT",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec112=106&pdf_so=p1",
+   s:{gpu:110000,cpu:30000,mb:9000,mem:25000,ssd:12000,cs:10000,psu:7200,cool:1000,os:300,p:297000},
+   m:{gpu:110000,cpu:30000,mb:10000,mem:25000,ssd:12000,cs:10000,psu:7200,cool:1000,os:300,p:312000},
+   i:{gpu:110000,cpu:23000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:7000,cool:300,p:276000},
+   a:{gpu:120000,cpu:25000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:243000}},
+  {n:"RTX5070Ti",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=501&pdf_so=p1",
+   s:{gpu:165000,cpu:30000,mb:9000,mem:25000,ssd:12000,cs:10000,psu:7200,cool:1000,os:300,p:357000},
+   m:{gpu:165000,cpu:30000,mb:10000,mem:25000,ssd:12000,cs:10000,psu:7200,cool:1000,os:300,p:375000},
+   i:{gpu:165000,cpu:23000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:7000,cool:300,p:342000},
+   a:{gpu:180000,cpu:25000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:315000}},
+  {n:"RX9070",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec112=107&pdf_so=p1",
+   s:{gpu:100000,cpu:30000,mb:9000,mem:25000,ssd:12000,cs:10000,psu:6000,cool:1000,os:300,p:260000},
+   m:{gpu:100000,cpu:30000,mb:10000,mem:25000,ssd:12000,cs:10000,psu:7200,cool:1000,os:300,p:274000},
+   i:{gpu:100000,cpu:23000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:7000,cool:300,p:236000},
+   a:{gpu:100000,cpu:25000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:219000}},
+  {n:"RTX5070",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=502&pdf_so=p1",
+   s:{gpu:105000,cpu:30000,mb:9000,mem:25000,ssd:12000,cs:10000,psu:6000,cool:1000,os:300,p:266000},
+   m:{gpu:105000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:7200,cool:300,os:300,p:245000},
+   i:{gpu:105000,cpu:23000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:7000,cool:300,p:243000},
+   a:{gpu:105000,cpu:25000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:225000}},
+  {n:"RX9060XT 16GB",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec112=108&pdf_Spec301=16384&pdf_so=p1",
+   s:{gpu:65000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:185000},
+   m:{gpu:65000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:7200,cool:300,os:300,p:195000},i:null,
+   a:{gpu:67000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:168000}},
+  {n:"RX9060XT 8GB",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec112=108&pdf_Spec301=8192&pdf_so=p1",
+   s:{gpu:50000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:167000},
+   m:{gpu:50000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:7200,cool:300,os:300,p:176000},
+   i:{gpu:50000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:6000,cool:300,p:156000},
+   a:{gpu:48000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:144000}},
+  {n:"RTX5060Ti 16GB",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=503&pdf_Spec301=16384&pdf_so=p1",
+   s:{gpu:90000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:215000},
+   m:{gpu:90000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:7200,cool:300,os:300,p:226000},i:null,
+   a:{gpu:87000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:191000}},
+  {n:"RTX5060Ti 8GB",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=503&pdf_so=p1",
+   s:{gpu:73000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:194000},
+   m:{gpu:73000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:7200,cool:300,os:300,p:205000},
+   i:{gpu:70000,cpu:23000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:7000,cool:300,p:196000},
+   a:{gpu:68000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:169000}},
+  {n:"RTX5060",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=504&pdf_so=p1",
+   s:{gpu:57000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:172000},
+   m:{gpu:57000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:179000},
+   i:{gpu:54000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:6000,cool:300,p:163000},
+   a:{gpu:51800,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:150000}},
+  {n:"RTX5050",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=505&pdf_so=p1",
+   s:{gpu:48000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:161000},
+   m:{gpu:48000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:168000},
+   i:{gpu:45000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:6000,cool:300,p:152000},
+   a:{gpu:45000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:151000}},
+  {n:"RX7600",kk:"",
+   s:{gpu:42000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:145000},
+   m:{gpu:41000,cpu:15000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:151000},
+   i:{gpu:41000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:6000,cool:300,p:131000},a:null},
+  {n:"RTX3050",kk:"https://kakaku.com/pc/videocard/itemlist.aspx?pdf_Spec103=487&pdf_so=p1",
+   s:{gpu:33000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:132000},
+   m:{gpu:33000,cpu:15000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:6000,cool:300,os:300,p:137000},
+   i:{gpu:33000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:6000,cool:300,p:132000},
+   a:{gpu:25000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:124000}},
+  {n:"RTX4070Ti",kk:"",
+   s:{gpu:90000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:209000},
+   m:{gpu:90000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:213000},
+   i:{gpu:90000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:7000,psu:1300,cool:300,p:205000},
+   a:{gpu:90000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:195000}},
+  {n:"RTX4070",kk:"",
+   s:{gpu:70000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:185000},m:null,i:null,
+   a:{gpu:70000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:171000}},
+  {n:"RTX4060Ti",kk:"",
+   s:{gpu:45000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:143000},m:null,
+   i:{gpu:40000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:700,cool:300,p:123000},
+   a:{gpu:48000,cpu:4500,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:128000}},
+  {n:"RTX3080Ti",kk:"",
+   s:{gpu:60000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:173000},m:null,i:null,
+   a:{gpu:68000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:159000}},
+  {n:"RTX3080",kk:"",
+   s:{gpu:45000,cpu:22000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:155000},
+   m:{gpu:45000,cpu:22000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:156000},
+   i:{gpu:45000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:1300,cool:300,p:130000},
+   a:{gpu:48000,cpu:15000,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:132000}},
+  {n:"RTX3070Ti",kk:"",
+   s:{gpu:35000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:131000},m:null,i:null,
+   a:{gpu:42000,cpu:4500,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:116000}},
+  {n:"RTX3070",kk:"",
+   s:{gpu:30000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:125000},
+   m:{gpu:30000,cpu:15000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:131000},
+   i:{gpu:28000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:700,cool:300,p:107000},
+   a:{gpu:37000,cpu:4500,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:110000}},
+  {n:"RTX4060",kk:"",
+   s:{gpu:38000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:135000},
+   m:{gpu:35000,cpu:15000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:137000},
+   i:{gpu:35000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:700,cool:300,p:116000},
+   a:{gpu:40000,cpu:4500,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:119000}},
+  {n:"RTX2080",kk:"",
+   s:{gpu:20000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:113000},
+   m:{gpu:20000,cpu:15000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:118000},
+   i:{gpu:20000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:700,cool:300,p:96000},
+   a:{gpu:20000,cpu:4500,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:98000}},
+  {n:"RTX3060",kk:"",
+   s:{gpu:32000,cpu:15000,mb:4000,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:119000},
+   m:{gpu:32000,cpu:15000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:126000},
+   i:{gpu:32000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:700,cool:300,p:100000},
+   a:{gpu:28000,cpu:4500,mb:4000,mem:8000,ssd:7000,cs:4000,kb:7000,psu:1300,cool:300,os:300,p:104000}},
+  {n:"RTX2060",kk:"",s:null,
+   m:{gpu:13000,cpu:15000,mb:4500,mem:8000,ssd:12000,cs:10000,psu:1300,cool:300,os:300,p:109000},
+   i:{gpu:13000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:700,cool:300,p:87000},a:null},
+  {n:"GTX1080Ti",kk:"",s:null,m:null,
+   i:{gpu:8000,cpu:3500,mb:4000,mem:8000,ssd:7000,cs:7000,psu:700,cool:300,p:81000},a:null},
+];
+
+let sC=[{n:"Elite 681 BK",a:0},{n:"Elite 681 WH",a:0},{n:"DS900 BK",a:-2000},{n:"DS900 WH",a:-2000},
+  {n:"CX200M BK",a:-3000},{n:"CX200M WH",a:-3000},{n:"H17",a:-6000},
+  {n:"T4 PLUS BK",a:-5000},{n:"T4 PLUS WH",a:-5000},{n:"ATX3面ピラーレス白",a:5000}];
+let mC=[{n:"DS900",a:-2000,mn:"DS900"},{n:"CX200M",a:-3000,mn:"CX200M"},{n:"H17",a:-6000,mn:"H17"}];
+
+let shopCsv=null,mercCsv=null,itoCsv=null,aminoCsv=null,logs=[];
+let autoFlags={s:false,m:false,i:false,a:false};
+let gpuSync=false;
+
+// ============================================================
+// UTIL
+// ============================================================
+const N=s=>s.replace(/\s+/g,'').toUpperCase();
+const Y=n=>(n!=null&&n!==0)?'¥'+Number(n).toLocaleString():'-';
+const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+const cst=(o,pl)=>{const pk=PC[pl].pk;return o?pk.reduce((s,k)=>s+(o[k]||0),0):0};
+
+function gS(){return[...data].filter(d=>d.s||d.m||d.i||d.a).sort((a,b)=>N(b.n).length-N(a.n).length)}
+function eG(t){const n=N(t);for(const g of gS()){if(n.includes(N(g.n)))return g.n}return null}
+function eCS(t){const mm=[...t.matchAll(/【([^】]+)】/g)];return mm.length?mm[mm.length-1][1]:null}
+function eCM(t){const m=t.match(/【ゲーミングPC】【([^】]+)】/);return m?m[1]:null}
+function aL(msg){logs.unshift('['+new Date().toLocaleTimeString()+'] '+msg);if(logs.length>100)logs.length=100;rL()}
+function dl(c,fn,ty){const b=new Blob([c],{type:ty});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fn;a.click();URL.revokeObjectURL(u)}
+
+// ============================================================
+// EDIT: inline inputs (.ci) for numbers + dblclick (.edt) for text
+// ============================================================
+// .ci change handler
+let _ciTimer=null,_rendering=false;
+function ciCommit(inp,andRender){
+  if(_rendering)return;
+  const ds=inp.dataset,i=+ds.i,pl=ds.pl,k=ds.k;
+  const o=data[i]?data[i][pl]:null;if(!o)return;
+  const nv=parseInt(inp.value)||0;
+  if(o[k]===nv)return;
+  o[k]=nv;
+  if(k==='gpu'&&gpuSync){['s','m','i','a'].forEach(p2=>{if(p2===pl||!data[i][p2])return;if('gpu' in data[i][p2])data[i][p2].gpu=nv})}
+  if(k!=='p'){
+    const targets=(k==='gpu'&&gpuSync)?['s','m','i','a']:[pl];
+    targets.forEach(p2=>{if(!data[i][p2]||!autoFlags[p2])return;
+      const P2=PC[p2];const c2=P2.pk.reduce((s2,kk)=>s2+(data[i][p2][kk]||0),0);
+      if(c2>0)data[i][p2].p=P2.autoP(c2);
+    });
+  }
+  if(andRender){_rendering=true;rA();_rendering=false;}
+}
+// input: debounced save (no rerender - just update data)
+document.addEventListener('input',e=>{const inp=e.target.closest('.ci');if(!inp)return;ciCommit(inp,false)});
+// blur: full rerender
+document.addEventListener('blur',e=>{const inp=e.target.closest('.ci');if(inp){ciCommit(inp,false);
+  clearTimeout(_ciTimer);_ciTimer=setTimeout(()=>{_rendering=true;rA();_rendering=false},50)}},true);
+// Enter=下の行, ↑↓=行移動
+document.addEventListener('keydown',e=>{
+  const inp=e.target.closest('.ci');if(!inp)return;
+  const i=+inp.dataset.i,pl=inp.dataset.pl,k=inp.dataset.k;
+  if(e.key==='Enter'||e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();ciCommit(inp,false);
+    const ni2=e.key==='ArrowUp'?i-1:i+1;
+    _rendering=true;rA();_rendering=false;
+    setTimeout(()=>{const ni=document.querySelector('.ci[data-i="'+ni2+'"][data-pl="'+pl+'"][data-k="'+k+'"]');if(ni){ni.focus();ni.select()}},20);
+  }
+});
+// focus時に全選択
+document.addEventListener('focus',e=>{const inp=e.target.closest('.ci');if(inp)inp.select()},true);
+
+// dblclick: text fields only (name, url, case names)
+let editing=false;
+document.addEventListener('dblclick',e=>{
+  if(editing)return;
+  const el=e.target.closest('.edt');if(!el)return;
+  editing=true;
+  const ds=el.dataset, i=+ds.i, pl=ds.pl, k=ds.k;
+  let val;
+  if(k==='n')val=data[i].n;
+  else if(k==='kk')val=data[i].kk;
+  else if(k==='cn'){val=(pl==='s'?sC:mC)[i].n}
+  else if(k==='ca'){val=(pl==='s'?sC:mC)[i].a}
+  const isNum=k==='ca';
+  const inp=document.createElement('input');
+  inp.className='inp'+(isNum?'':' wide');
+  inp.type=isNum?'number':'text';
+  inp.value=val!=null?val:'';
+  el.replaceWith(inp);inp.focus();inp.select();
+  const done=()=>{
+    editing=false;let v=inp.value;
+    if(k==='n'){data[i].n=v||''}
+    else if(k==='kk'){data[i].kk=v||''}
+    else if(k==='cn'){(pl==='s'?sC:mC)[i].n=v||''}
+    else if(k==='ca'){(pl==='s'?sC:mC)[i].a=parseInt(v)||0}
+    rA();
+  };
+  inp.addEventListener('blur',done);
+  inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){inp.blur()}if(ev.key==='Escape'){editing=false;rA()}});
+});
+
+// ============================================================
+// TABS
+// ============================================================
+const TABS=[{id:'sc',l:'🛒 Shopify'},{id:'mc',l:'📦 メルカリShops'},{id:'ic',l:'👤 イトウ'},{id:'ac',l:'👤 アミノ'},
+  {id:'cs',l:'⚙ ケース設定'},{id:'sv',l:'📄 Shopify CSV'},{id:'mv',l:'📄 メルカリShops CSV'},
+  {id:'iv',l:'👤 伊藤CSV'},{id:'av',l:'👤 網野CSV'},{id:'lg',l:'📋 ログ'}];
+let cT='sc';
+function iT(){
+  const bar=document.getElementById('tabBar'),pn=document.getElementById('panels');
+  bar.innerHTML=TABS.map(t=>`<button class="tab${t.id===cT?' on':''}" data-t="${t.id}">${t.l}</button>`).join('');
+  pn.innerHTML=TABS.map(t=>`<div class="pnl${t.id===cT?' on':''}" id="p_${t.id}"></div>`).join('');
+  bar.addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(!b)return;cT=b.dataset.t;
+    bar.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===cT));
+    document.querySelectorAll('.pnl').forEach(x=>x.classList.toggle('on',x.id==='p_'+cT));rA()});
+}
+
+// ============================================================
+// RENDER: Cost + profit table
+// ============================================================
+function rP(pl){
+  const P=PC[pl],pid=P.id,pk=P.pk;
+  const isAuto=autoFlags[pl];
+  let h='';
+
+  h+=`<div class="sec"><div class="row"><h3 class="${P.cl}">${P.l} 原価・利益テーブル <span style="font-weight:400;font-size:11px;color:#71717a">（直接入力 / Enter↓ / ↑↓移動 / Tab→）</span></h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600;color:${isAuto?'#4ade80':'#71717a'}">
+        <span style="position:relative;display:inline-block;width:36px;height:20px" onclick="toggleAuto('${pl}')">
+          <span style="position:absolute;inset:0;border-radius:10px;background:${isAuto?'#4ade80':'#3f3f46'};transition:.2s"></span>
+          <span style="position:absolute;top:2px;left:${isAuto?'18px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s"></span>
+        </span>
+        🎯 自動売値
+      </label>
+      <button class="btn b2" onclick="addR('${pl}')">+ GPU追加</button>
+    </div></div>`;
+  if(isAuto)h+=`<div style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10px;color:#86efac">
+    <b>自動ON:</b> パーツ原価変更→売値自動計算 <span class="GR" style="margin-left:6px">利益目標 = 20,000 + 売値×10%</span></div>`;
+  else h+=`<div style="background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.12);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10px;color:#a1a1aa">
+    <b class="A">利益目標:</b> 5万→2.5万 / 10万→3万 / 15万→3.5万 / 20万→4万 / 30万→5万 / 40万→6万</div>`;
+  if(gpuSync)h+=`<div style="background:rgba(244,114,182,.04);border:1px solid rgba(244,114,182,.12);border-radius:6px;padding:4px 10px;margin-bottom:8px;font-size:10px;color:#f9a8d4">
+    <b>🔗 同期ON:</b> グラボ価格を変更すると他プラットフォームにも反映されます</div>`;
+  h+=`<div class="scr" style="max-height:440px"><table><thead><tr><th style="min-width:110px">型番</th>`;
+  pk.forEach(k=>{h+=`<th class="r">${P.pl[k]}</th>`});
+  h+=`<th class="r" style="color:#f59e0b">原価</th><th class="r" style="color:${isAuto?'#4ade80':'#60a5fa'}">${isAuto?'売値(自動)':P.pl2}</th>
+    <th class="r">手数料</th><th class="r" style="color:#4ade80">利益</th><th class="r">目標</th><th class="r">差</th>`;
+  if(P.kk)h+=`<th>価格.com</th>`;
+  h+=`<th class="c" style="width:28px"></th></tr></thead><tbody>`;
+
+  data.forEach((d,i)=>{
+    const o=d[pl];if(!o)return;
+    const c=cst(o,pl),fee=o.p?P.fee(o.p,c):0,prof=o.p?o.p-c-fee:0;
+    const pc=prof>0?'G':'R';
+    h+=`<tr><td class="m" style="font-weight:700;color:#fff"><span class="edt" style="text-align:left;min-width:100px" data-i="${i}" data-pl="${pl}" data-k="n">${esc(d.n)}</span></td>`;
+    pk.forEach(k=>{h+=`<td class="r m"><input type="number" class="ci${k==='gpu'?' gpu':''}" value="${o[k]||0}" data-i="${i}" data-pl="${pl}" data-k="${k}"></td>`});
+    h+=`<td class="r m cost-cell A">${c.toLocaleString()}</td>`;
+    h+=`<td class="r m price-cell">${isAuto?`<input type="number" class="ci price-auto" value="${o.p||0}" data-i="${i}" data-pl="${pl}" data-k="p" readonly>`:`<input type="number" class="ci price" value="${o.p||0}" data-i="${i}" data-pl="${pl}" data-k="p">`}</td>`;
+    h+=`<td class="r m GR">${fee?fee.toLocaleString():'-'}</td>`;
+    const tgt=o.p?20000+0.1*o.p:0;const pdif=prof-tgt;
+    h+=`<td class="r m" style="font-weight:700"><span class="${pc}">${prof?prof.toLocaleString():'-'}</span></td>`;
+    h+=`<td class="r m GR">${tgt?tgt.toLocaleString():'-'}</td>`;
+    h+=`<td class="r m ${pdif>500?'G':pdif<-500?'R':'GR'}" style="font-size:10px">${o.p?(pdif>0?'+':'')+pdif.toLocaleString():'-'}</td>`;
+    if(P.kk)h+=`<td>${d.kk?`<a class="kk" href="${esc(d.kk)}" target="_blank">価格.com→</a>`:`<span class="edt GR" style="font-size:10px;text-align:left" data-i="${i}" data-pl="s" data-k="kk">-</span>`}</td>`;
+    h+=`<td class="c"><button class="bx" onclick="delR(${i},'${pl}')">✕</button></td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  h+=`<div style="margin-top:4px;font-size:10px;color:#52525b">手数料: ${P.fd}</div></div>`;
+
+  // Case grid (Shopify/メルカリShopsのみ)
+  if(P.cs){
+    const cs=pl==='s'?sC:mC;
+    h+=`<div class="sec"><h3 class="${P.cl}" style="margin-bottom:6px">ケース別価格一覧</h3>`;
+    h+=`<div class="scr" style="max-height:360px"><table><thead><tr><th>型番</th>`;
+    cs.forEach(c=>{h+=`<th class="r">${esc(c.n)}</th>`});
+    h+=`</tr></thead><tbody>`;
+    data.forEach(d=>{
+      const o=d[pl];if(!o||!o.p)return;
+      h+=`<tr><td class="m" style="font-weight:600">${esc(d.n)}</td>`;
+      cs.forEach(c=>{h+=`<td class="r m">${(o.p+c.a).toLocaleString()}</td>`});
+      h+=`</tr>`;
+    });
+    h+=`</tbody></table></div></div>`;
+  }
+  document.getElementById('p_'+pid).innerHTML=h;
+}
+
+// ============================================================
+// RENDER: Case settings
+// ============================================================
+function rC(){
+  let h='<div class="sec"><div class="row"><h3 class="A">Shopify ケース調整（Elite 681 = 0基準）</h3><button class="btn b1" onclick="addC(\'s\')">+ 追加</button></div>';
+  h+=mkCT('s');h+='</div>';
+  h+='<div class="sec"><div class="row"><h3 class="A">メルカリ ケース調整（売値(10%)= 0基準）</h3><button class="btn b1" onclick="addC(\'m\')">+ 追加</button></div>';
+  h+=mkCT('m');h+='</div>';
+  document.getElementById('p_cs').innerHTML=h;
+}
+function mkCT(pl){
+  const cs=pl==='s'?sC:mC,isS=pl==='s';
+  let h='<table><thead><tr><th>ケース名</th><th class="r">調整額</th>';
+  if(!isS)h+='<th>CSV名</th>';
+  h+='<th class="c" style="width:28px"></th></tr></thead><tbody>';
+  cs.forEach((c,i)=>{
+    const clr=c.a>0?'R':c.a<0?'G':'GR';
+    h+=`<tr><td class="m"><span class="edt" style="text-align:left;min-width:110px" data-i="${i}" data-pl="${pl}" data-k="cn">${esc(c.n)}</span></td>`;
+    h+=`<td class="r m ${clr}"><span class="edt" data-i="${i}" data-pl="${pl}" data-k="ca">${c.a.toLocaleString()}</span></td>`;
+    if(!isS)h+=`<td class="GR">${c.mn||'-'}</td>`;
+    h+=`<td class="c"><button class="bx" onclick="delC('${pl}',${i})">✕</button></td></tr>`;
+  });
+  return h+'</tbody></table>';
+}
+
+// ============================================================
+// RENDER: CSV tabs
+// ============================================================
+function rV(pl){
+  const isS=pl==='s',pid=isS?'sv':'mv',csv=isS?shopCsv:mercCsv;
+  const cl=isS?'G':'B',lbl=isS?'Shopify':'メルカリShops';
+  let h=`<div class="sec"><div class="row"><h3 class="${cl}">${lbl} CSV</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
+    <label class="btn b2" style="cursor:pointer">📂 インポート<input type="file" accept=".csv" onchange="iC('${pl}',this)"></label>`;
+  if(csv)h+=`<button class="btn b1" onclick="aC('${pl}')">⚡ 価格適用</button>
+    <button class="btn b2" onclick="eC('${pl}')">📥 CSV出力${isS?'（下書き除外）':'（非公開/在庫0除外）'}</button>`;
+  h+='</div></div>';
+  if(!csv){h+=`<div class="empty"><div class="ic">${isS?'🛒':'📦'}</div><p>${lbl}のCSVをインポート</p></div>`}
+  else{
+    const a=anC(pl),act=a.filter(r=>!r.ex),chg=act.filter(r=>r.d&&r.d!==0),um=act.filter(r=>!r.ok);
+    h+=`<div style="margin-bottom:6px"><span class="stat">全: <b class="W">${a.length}</b></span>
+      <span class="stat">出力: <b class="${cl}">${act.length}</b></span>
+      <span class="stat">除外: <b class="GR">${a.length-act.length}</b></span>
+      <span class="stat">変更: <b class="A">${chg.length}</b></span>
+      <span class="stat">未マッチ: <b class="R">${um.length}</b></span></div>`;
+    h+=`<div class="scr"><table><thead><tr><th>#</th><th class="c">出力</th><th>商品名</th><th>GPU</th><th>ケース</th>`;
+    h+=isS?'<th class="c">状態</th>':'<th class="c">在庫</th>';
+    h+=`<th class="r">現在</th><th class="r">新価格</th><th class="r">差額</th></tr></thead><tbody>`;
+    a.forEach((r,i)=>{
+      const cls=r.ex?'xc':'';const dc=r.d>0?'R':r.d<0?'G':'GR';
+      h+=`<tr class="${cls}"><td class="GR">${i+1}</td><td class="c">${r.ex?'<span class="R">✕</span>':'<span class="G">○</span>'}</td>`;
+      h+=`<td class="trn" title="${esc(r.t)}">${esc(r.t)}</td><td class="m ${cl}">${r.g||'<span class="R">?</span>'}</td><td>${r.c||'-'}</td>`;
+      if(isS)h+=`<td class="c"><span class="badge ${r.st==='active'?'bg':r.st==='draft'?'by':'bgr'}">${r.st||''}</span></td>`;
+      else h+=`<td class="c m">${r.stk}</td>`;
+      h+=`<td class="r m">${Y(r.cp)}</td><td class="r m A">${r.np!=null?Y(r.np):'-'}</td>`;
+      h+=`<td class="r m ${dc}">${r.d!=null&&r.d!==0?(r.d>0?'+':'')+r.d.toLocaleString():'-'}</td></tr>`;
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';
+  document.getElementById('p_'+pid).innerHTML=h;
+}
+
+function anC(pl){
+  const isS=pl==='s',csv=isS?shopCsv:mercCsv;if(!csv)return[];
+  const cm=isS?Object.fromEntries(sC.map(c=>[c.n,c])):null;
+  const mm=isS?null:{};if(!isS)mC.forEach(c=>{if(c.mn)mm[c.mn]=c});
+  return csv.map((row,idx)=>{
+    const t=isS?(row.Title||''):(row['商品名']||'');
+    if(isS&&!t.trim())return null;
+    const g=eG(t),c=isS?eCS(t):eCM(t);
+    const d=g?data.find(x=>N(x.n)===N(g)):null;
+    const o=d?(isS?d.s:d.m):null;
+    const ca=isS?(c?cm[c]:null):(c?mm[c]:null);
+    const np=(o&&o.p)?o.p+(ca?ca.a:0):null;
+    const cp=parseInt(isS?row['Variant Price']:row['販売価格'])||0;
+    let ex=false,stk=0;
+    if(isS){ex=row.Status!=='active'}
+    else{ex=row['商品ステータス']!=='2';for(let i=1;i<=10;i++){const v=row['SKU'+i+'_現在の在庫数'];if(v)stk+=parseInt(v)||0}if(!stk)ex=true}
+    return{idx,t,g,c,st:isS?row.Status:null,stk,cp,np,d:np!=null?np-cp:null,ok:!!(o&&o.p),ex};
+  }).filter(Boolean);
+}
+
+// ============================================================
+// CSV ops
+// ============================================================
+function iC(pl,el){
+  const f=el.files[0];if(!f)return;
+  if(pl==='s'){Papa.parse(f,{header:true,skipEmptyLines:false,complete:r=>{shopCsv=r.data;aL('Shopify CSV読込: '+r.data.filter(x=>x.Title&&x.Title.trim()).length+'商品');rV('s')}})}
+  else{const rd=new FileReader();rd.onload=ev=>{let t;try{t=new TextDecoder('shift-jis').decode(ev.target.result)}catch{t=new TextDecoder('utf-8').decode(ev.target.result)}
+    mercCsv=Papa.parse(t,{header:true,skipEmptyLines:true}).data;aL('メルカリCSV読込: '+mercCsv.length+'商品');rV('m')};rd.readAsArrayBuffer(f)}
+  el.value='';
+}
+function aC(pl){
+  const isS=pl==='s',csv=isS?shopCsv:mercCsv;if(!csv)return;
+  let up=0,sk=0;
+  const cm=Object.fromEntries(sC.map(c=>[c.n,c]));
+  const mm={};mC.forEach(c=>{if(c.mn)mm[c.mn]=c});
+  csv.forEach(row=>{
+    const t=isS?(row.Title||''):(row['商品名']||'');if(isS&&!t.trim())return;
+    const g=eG(t);if(!g){sk++;return}
+    const d=data.find(x=>N(x.n)===N(g)),o=d?(isS?d.s:d.m):null;if(!o||!o.p){sk++;return}
+    const c=isS?eCS(t):eCM(t),ca=isS?(c?cm[c]:null):(c?mm[c]:null);
+    const np=o.p+(ca?ca.a:0),key=isS?'Variant Price':'販売価格';
+    if(String(np)!==String(row[key]))up++;row[key]=String(np);
+  });
+  aL((isS?'Shopify':'メルカリ')+'価格適用: '+up+'件変更 / '+sk+'件スキップ');rV(pl);
+}
+function eC(pl){
+  const isS=pl==='s',csv=isS?shopCsv:mercCsv;if(!csv)return;let f;
+  if(isS){const ah=new Set();csv.forEach(r=>{if(r.Status==='active'&&r.Handle)ah.add(r.Handle)});
+    f=csv.filter(r=>r.Status?r.Status==='active':r.Handle&&ah.has(r.Handle))}
+  else{f=csv.filter(r=>{if(r['商品ステータス']!=='2')return false;let s=0;for(let i=1;i<=10;i++){const v=r['SKU'+i+'_現在の在庫数'];if(v)s+=parseInt(v)||0}return s>0})}
+  dl('\uFEFF'+Papa.unparse(f),(isS?'shopify':'mercari')+'_updated.csv','text/csv;charset=utf-8');
+  aL((isS?'Shopify':'メルカリ')+'CSV出力: '+f.length+'行');
+}
+
+// ============================================================
+// Add/Del
+// ============================================================
+function addR(pl){const P=PC[pl];const o={p:0};P.pk.forEach(k=>o[k]=0);
+  const d={n:'新規GPU',kk:'',s:null,m:null,i:null,a:null};d[pl]={...o};data.push(d);rA()}
+function autoCalc(pl){
+  const P=PC[pl];let cnt=0;
+  data.forEach(d=>{
+    const o=d[pl];if(!o)return;
+    const c=P.pk.reduce((s,k)=>s+(o[k]||0),0);
+    if(c===0)return;
+    const np=P.autoP(c);
+    if(np!==o.p)cnt++;
+    o.p=np;
+  });
+  aL(P.l+'利益目標自動計算: '+cnt+'件更新');rA();
+}
+function toggleAuto(pl){
+  autoFlags[pl]=!autoFlags[pl];
+  if(autoFlags[pl])autoCalc(pl); else rA();
+}
+function delR(i,pl){data[i][pl]=null;if(!data[i].s&&!data[i].m&&!data[i].i&&!data[i].a)data.splice(i,1);rA()}
+function addC(p){(p==='s'?sC:mC).push({n:'新規',a:0,mn:''});rA()}
+function delC(p,i){(p==='s'?sC:mC).splice(i,1);rA()}
+
+// ============================================================
+// ============================================================
+// 個人メルカリ CSV (伊藤/網野) - CS2形式 CP932
+// 手数料: 売値×10% + 送料1500 + (売値-原価-(売値×10%+1500))×5% (Shopsと同じ)
+// ============================================================
+function impRival(who,el){
+  const f=el.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=ev=>{
+    let t;
+    const buf=ev.target.result;
+    try{t=new TextDecoder('shift-jis').decode(buf)}catch{t=new TextDecoder('utf-8').decode(buf)}
+    const r=Papa.parse(t,{header:true,skipEmptyLines:true});
+    if(who==='ito')itoCsv=r.data; else aminoCsv=r.data;
+    const active=r.data.filter(x=>x['出品状況']==='出品中');
+    aL((who==='ito'?'伊藤':'網野')+'メルカリCSV読込: '+r.data.length+'件（出品中'+active.length+'件）');
+    rA();
+  };rd.readAsArrayBuffer(f);el.value='';
+}
+function analyzeRival(who){
+  const csv=who==='ito'?itoCsv:aminoCsv;if(!csv)return[];
+  return csv.map((row,idx)=>{
+    const name=row['商品名']||'';
+    const price=parseInt(row['価格'])||0;
+    const status=row['出品状況']||'';
+    const gpu=eG(name);
+    const d=gpu?data.find(x=>N(x.n)===N(gpu)):null;
+    const o=d&&d.m?d.m:null;
+    const np=(o&&o.p)?o.p:null;
+    const diff=np!=null&&price?np-price:null;
+    return{idx,name,price,status,gpu,np,diff};
+  });
+}
+function rRival(who){
+  const pid=who==='ito'?'iv':'av';
+  const csv=who==='ito'?itoCsv:aminoCsv;
+  const label=who==='ito'?'伊藤':'網野';
+  const clr=who==='ito'?'#c084fc':'#fb923c';
+  let h=`<div class="sec"><div class="row"><h3 style="color:${clr}">👤 ${label}メルカリ</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
+    <label class="btn b2" style="cursor:pointer">📂 CSVインポート<input type="file" accept=".csv" onchange="impRival('${who}',this)"></label>`;
+  if(csv){
+    h+=`<button class="btn b1" onclick="applyRival('${who}')">⚡ 価格適用</button>`;
+    h+=`<button class="btn b2" onclick="expRival('${who}')">📥 CSV出力（出品中のみ）</button>`;
+  }
+  h+='</div></div>';
+  if(!csv){h+=`<div class="empty"><div class="ic">👤</div><p>${label}メルカリのCSVをインポート（CS2形式）</p></div>`}
+  else{
+    const a=analyzeRival(who);
+    const listing=a.filter(r=>r.status==='出品中');
+    const sold=a.filter(r=>r.status==='売却済');
+    const matched=listing.filter(r=>r.gpu);
+    const chg=listing.filter(r=>r.diff!=null&&r.diff!==0);
+    h+=`<div style="margin-bottom:6px">
+      <span class="stat">全: <b class="W">${a.length}</b></span>
+      <span class="stat">出品中: <b style="color:${clr}">${listing.length}</b></span>
+      <span class="stat">売却済: <b class="GR">${sold.length}</b></span>
+      <span class="stat">GPU検出(出品中): <b class="A">${matched.length}</b></span>
+      <span class="stat">変更: <b class="A">${chg.length}</b></span>
+    </div>`;
+    h+=`<div class="scr"><table><thead><tr>
+      <th>#</th><th class="c">出力</th><th class="c">状態</th><th>商品名</th><th>GPU</th>
+      <th class="r">現在</th><th class="r">新価格</th><th class="r">差額</th>
+      </tr></thead><tbody>`;
+    a.forEach((r,i)=>{
+      const isOut=r.status==='出品中';
+      const dc=r.diff>0?'R':r.diff<0?'G':'GR';
+      const stBadge=r.status==='出品中'?'<span class="badge bg">出品中</span>':
+        r.status==='売却済'?'<span class="badge bgr">売却済</span>':
+        `<span class="badge by">${esc(r.status)}</span>`;
+      h+=`<tr${!isOut?' class="xc"':((r.diff&&r.diff!==0)?' style="background:rgba(245,158,11,.04)"':'')}>
+        <td class="GR">${i+1}</td>
+        <td class="c">${isOut?'<span class="G">○</span>':'<span class="R">✕</span>'}</td>
+        <td class="c">${stBadge}</td>
+        <td class="trn" title="${esc(r.name)}">${esc(r.name)}</td>
+        <td class="m" style="color:${clr}">${r.gpu||'<span class="GR">-</span>'}</td>
+        <td class="r m">${r.price?'¥'+r.price.toLocaleString():'-'}</td>
+        <td class="r m A">${r.np!=null?'¥'+r.np.toLocaleString():'-'}</td>
+        <td class="r m ${dc}" style="font-weight:600">${r.diff!=null&&r.diff!==0?(r.diff>0?'+':'')+r.diff.toLocaleString():'-'}</td>
+      </tr>`;
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';
+  document.getElementById('p_'+pid).innerHTML=h;
+}
+function applyRival(who){
+  const csv=who==='ito'?itoCsv:aminoCsv;if(!csv)return;
+  let up=0,sk=0;
+  csv.forEach(row=>{
+    if(row['出品状況']!=='出品中')return;
+    const name=row['商品名']||'';
+    const gpu=eG(name);if(!gpu){sk++;return}
+    const d=data.find(x=>N(x.n)===N(gpu));
+    const o=d&&d.m?d.m:null;if(!o||!o.p){sk++;return}
+    if(String(o.p)!==String(row['価格']))up++;
+    row['価格']=String(o.p);
+  });
+  aL((who==='ito'?'伊藤':'網野')+'メルカリ価格適用: '+up+'件変更 / '+sk+'件スキップ');rA();
+}
+function expRival(who){
+  const csv=who==='ito'?itoCsv:aminoCsv;if(!csv)return;
+  const filtered=csv.filter(r=>r['出品状況']==='出品中');
+  dl('\uFEFF'+Papa.unparse(filtered),(who==='ito'?'ito':'amino')+'_mercari_updated.csv','text/csv;charset=utf-8');
+  aL((who==='ito'?'伊藤':'網野')+'メルカリCSV出力: '+filtered.length+'件');
+}
+
+// Log
+// ============================================================
+function rL(){const el=document.getElementById('p_lg');if(!el)return;
+  el.innerHTML=`<div class="sec"><h3 class="GR" style="margin-bottom:6px">操作ログ</h3><div class="logbox">${logs.length?logs.map(l=>'<div>'+esc(l)+'</div>').join(''):'<span class="GR">操作するとログが表示されます</span>'}</div></div>`}
+
+// ============================================================
+// Render all
+// ============================================================
+// ============================================================
+// SAVE / LOAD (localStorage)
+// ============================================================
+const SAVE_KEY='titan_price_tool';
+function saveData(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({data,sC,mC,autoFlags,gpuSync,v:4}));
+    const el=document.getElementById('saveInd');if(el){el.style.color='#fbbf24';el.textContent='💾 保存しました';
+      setTimeout(()=>{el.style.color='#4ade80';el.textContent='💾 自動保存'},800)}
+  }catch(e){}
+}
+function loadData(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);if(!raw)return false;
+    const s=JSON.parse(raw);
+    if(s.data)data=s.data;
+    if(s.sC)sC=s.sC;
+    if(s.mC)mC=s.mC;
+    if(s.autoFlags)autoFlags=s.autoFlags;
+    if(s.gpuSync!=null)gpuSync=s.gpuSync;
+    else if(s.sAuto!=null){autoFlags.s=s.sAuto;autoFlags.m=s.mAuto||false}
+    return true;
+  }catch(e){return false}
+}
+function resetData(){
+  if(!confirm('保存データを初期値にリセットしますか？'))return;
+  localStorage.removeItem(SAVE_KEY);
+  location.reload();
+}
+function expJson(){
+  const obj={data,sC,mC,autoFlags,gpuSync,v:4,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='titan_price_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+  aL('JSON出力完了');
+}
+function impJson(el){
+  const f=el.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=ev=>{
+    try{
+      const obj=JSON.parse(ev.target.result);
+      if(obj.data)data=obj.data;
+      if(obj.sC)sC=obj.sC;
+      if(obj.mC)mC=obj.mC;
+      if(obj.autoFlags)autoFlags=obj.autoFlags;
+      if(obj.gpuSync!=null)gpuSync=obj.gpuSync;
+      aL('JSON読込完了: '+data.length+'GPU');
+      rA();
+    }catch(e){alert('JSONの読込に失敗: '+e.message)}
+  };rd.readAsText(f);el.value='';
+}
+
+function rA(){rP('s');rP('m');rP('i');rP('a');rC();rV('s');rV('m');rRival('ito');rRival('amino');rL();
+  const sw=document.getElementById('syncWrap'),sd=document.getElementById('syncDot');
+  if(sw){sw.style.color=gpuSync?'#f472b6':'#52525b'}
+  if(sd){sd.style.background=gpuSync?'#f472b6':'#3f3f46'}
+  saveData()}
+
+// ============================================================
+// Init
+// ============================================================
+document.getElementById('dateD').textContent=new Date().toLocaleDateString('ja-JP');
+const loaded=loadData();
+iT();rA();
+if(loaded)console.log('TITAN: saved data loaded');
+</script>
+</body>
+</html>
